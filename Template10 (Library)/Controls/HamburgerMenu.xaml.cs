@@ -132,15 +132,27 @@ namespace Template10.Controls
             DebugWrite($"PageType: {pageType} PageParam: {pageParam}");
 
             pageType = pageType ?? NavigationService.CurrentPageType;
-            var buttons = _navButtons
+            var type_match_buttons = _navButtons
                 .Where(x => Equals(x.Value.PageType, pageType));
 
-            pageParam = pageParam ?? NavigationService.CurrentPageParam;
-            buttons = buttons
+            if (pageParam == null)
+                pageParam = NavigationService.CurrentPageParam;
+            else
+                try
+                {
+                    pageParam = NavigationService.FrameFacade.SerializationService.Deserialize(pageParam.ToString());
+                }
+                catch { }
+
+            var param_match_buttons = type_match_buttons
                 .Where(x => Equals(x.Value.PageParameter, null) || Equals(x.Value.PageParameter, pageParam));
 
-            Selected = buttons
-                .Select(x => x.Value).FirstOrDefault();
+            var button = param_match_buttons.Select(x => x.Value).FirstOrDefault();
+
+            if (button == null)
+                button = type_match_buttons.Select(x => x.Value).FirstOrDefault();
+
+            Selected = button;
         }
 
         #region commands
@@ -434,7 +446,7 @@ namespace Template10.Controls
             // do not remove this if statement
             //// this is the fix for #410 (click twice)
             if (previous != null)
-                IsOpen = false;
+                IsOpen = (DisplayMode == SplitViewDisplayMode.CompactInline && IsOpen);
 
             // undo previous
             if (previous?.IsChecked ?? true && previous != value)
@@ -451,7 +463,7 @@ namespace Template10.Controls
             {
                 if (NavigationService.Navigate(value.PageType, value?.PageParameter, value?.NavigationTransitionInfo))
                 {
-                    IsOpen = false;
+                    IsOpen = (DisplayMode == SplitViewDisplayMode.CompactInline && IsOpen);
                     if (value.ClearHistory)
                         NavigationService.ClearHistory();
                 }
@@ -460,6 +472,10 @@ namespace Template10.Controls
                 {
                     if (value.ClearHistory)
                         NavigationService.ClearHistory();
+                }
+                else if (NavigationService.CurrentPageType == value.PageType)
+                {
+                    // just check it
                 }
                 else
                 {
@@ -509,6 +525,8 @@ namespace Template10.Controls
                     if (ShellSplitView.DisplayMode == SplitViewDisplayMode.Overlay && ShellSplitView.IsPaneOpen)
                         ShellSplitView.IsPaneOpen = false;
                     else if (ShellSplitView.DisplayMode == SplitViewDisplayMode.CompactOverlay && ShellSplitView.IsPaneOpen)
+                        ShellSplitView.IsPaneOpen = false;
+                    else if (ShellSplitView.DisplayMode == SplitViewDisplayMode.CompactInline && ShellSplitView.IsPaneOpen)
                         ShellSplitView.IsPaneOpen = false;
                 }
             }
@@ -605,12 +623,16 @@ namespace Template10.Controls
             {
                 ShellSplitView.IsHitTestVisible = ShellSplitView.IsEnabled = false;
                 ShellSplitView.Content = null;
+                if (RootGrid.Children.Contains(ShellSplitView))
+                    RootGrid.Children.Remove(ShellSplitView);
                 if (!RootGrid.Children.Contains(frame) && frame != null)
                     RootGrid.Children.Add(frame);
             }
             else
             {
                 ShellSplitView.IsHitTestVisible = ShellSplitView.IsEnabled = true;
+                if (!RootGrid.Children.Contains(ShellSplitView))
+                    RootGrid.Children.Add(ShellSplitView);
                 if (RootGrid.Children.Contains(frame) && frame != null)
                     RootGrid.Children.Remove(frame);
                 ShellSplitView.Content = frame;
@@ -688,15 +710,17 @@ namespace Template10.Controls
             // add this radio to the list
             var r = sender as RadioButton;
             var i = r.DataContext as HamburgerButtonInfo;
-            _navButtons.Add(r, i);
-            HighlightCorrectButton();
-
-            if (!_areNavButtonsLoaded)
+            if (!_navButtons.ContainsKey(r))
             {
-                _navButtonsLoadedCounter++;
-                if (_navButtonsLoadedCounter >= NavButtonCount)
-                    _areNavButtonsLoaded = true;
+                _navButtons.Add(r, i);
+                if (!_areNavButtonsLoaded)
+                {
+                    _navButtonsLoadedCounter++;
+                    if (_navButtonsLoadedCounter >= NavButtonCount)
+                        _areNavButtonsLoaded = true;
+                }
             }
+            HighlightCorrectButton();
         }
 
         private void NavButton_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
