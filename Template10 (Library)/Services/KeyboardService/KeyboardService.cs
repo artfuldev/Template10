@@ -24,15 +24,8 @@ namespace Template10.Services.KeyboardService
             {
                 e.Handled = true;
 
-                // use this to hide and show the menu
-                if (e.WindowsKey && e.Character.ToString().ToLower().Equals("z"))
-                {
-                    DebugWrite("Windows+Z", caller: nameof(AfterWindowZGesture));
-                    AfterWindowZGesture?.Invoke();
-                }
-
                 // use this to place focus in search box
-                else if (e.OnlyControl && e.Character.ToString().ToLower().Equals("e"))
+                 if (e.OnlyControl && e.Character.ToString().ToLower().Equals("e"))
                 {
                     DebugWrite("Control+E", caller: nameof(AfterControlEGesture));
                     AfterControlEGesture?.Invoke();
@@ -49,6 +42,12 @@ namespace Template10.Services.KeyboardService
                 {
                     DebugWrite("NavigationLeft", caller: nameof(AfterBackGesture));
                     AfterBackGesture?.Invoke();
+                }
+
+                else if (e.VirtualKey == Windows.System.VirtualKey.GamepadMenu)
+                {
+                    DebugWrite("GamepadMenu", caller: nameof(AfterMenuGesture));
+                    AfterMenuGesture?.Invoke();
                 }
 
                 else if (e.VirtualKey == Windows.System.VirtualKey.GamepadLeftShoulder)
@@ -72,22 +71,22 @@ namespace Template10.Services.KeyboardService
                 // use this to nav forward
                 else if (e.VirtualKey == Windows.System.VirtualKey.GoForward)
                 {
-                    DebugWrite("GoForward", caller: nameof(AfterBackGesture));
+                    DebugWrite("GoForward", caller: nameof(AfterForwardGesture));
                     AfterForwardGesture?.Invoke();
                 }
                 else if (e.VirtualKey == Windows.System.VirtualKey.NavigationRight)
                 {
-                    DebugWrite("NavigationRight", caller: nameof(AfterBackGesture));
+                    DebugWrite("NavigationRight", caller: nameof(AfterForwardGesture));
                     AfterForwardGesture?.Invoke();
                 }
                 else if (e.VirtualKey == Windows.System.VirtualKey.GamepadRightShoulder)
                 {
-                    DebugWrite("GamepadRightShoulder", caller: nameof(AfterBackGesture));
+                    DebugWrite("GamepadRightShoulder", caller: nameof(AfterForwardGesture));
                     AfterForwardGesture?.Invoke();
                 }
                 else if (e.OnlyAlt && e.VirtualKey == Windows.System.VirtualKey.Right)
                 {
-                    DebugWrite("Alt+Right", caller: nameof(AfterBackGesture));
+                    DebugWrite("Alt+Right", caller: nameof(AfterForwardGesture));
                     AfterForwardGesture?.Invoke();
                 }
 
@@ -102,7 +101,15 @@ namespace Template10.Services.KeyboardService
                         PrimaryButtonCommand = new Mvvm.DelegateCommand(open),
                         SecondaryButtonText = "Close"
                     };
-                    await about.ShowAsync();
+
+                    try
+                    {
+                        await about.ShowAsync();
+                    }
+                    catch (System.Runtime.InteropServices.COMException)
+                    {
+                        DebugWrite("About dialog already showing");
+                    }
                 }
 
                 // anything else
@@ -124,7 +131,7 @@ namespace Template10.Services.KeyboardService
         public Action AfterBackGesture { get; set; }
         public Action AfterForwardGesture { get; set; }
         public Action AfterControlEGesture { get; set; }
-        public Action AfterWindowZGesture { get; set; }
+        public Action AfterMenuGesture { get; set; }
     }
 
 }

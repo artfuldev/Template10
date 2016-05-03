@@ -32,7 +32,7 @@ namespace Template10.Behaviors
         private void BootStrapper_BackRequested(object sender, HandledEventArgs e)
         {
             e.Handled = Handled;
-            Interaction.ExecuteActions(AssociatedObject, Actions, null);
+            Interaction.ExecuteActions(sender, Actions, null);
         }
 
         public bool Handled
@@ -58,6 +58,6 @@ namespace Template10.Behaviors
         }
         public static readonly DependencyProperty ActionsProperty =
             DependencyProperty.Register(nameof(Actions), typeof(ActionCollection),
-                typeof(TextBoxEnterKeyBehavior), new PropertyMetadata(null));
+                typeof(BackButtonBehavior), new PropertyMetadata(null));
     }
 }

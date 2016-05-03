@@ -1,10 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.Activation;
-using Windows.Storage;
-using Windows.Storage.AccessCache;
 
-namespace JumpList
+namespace Template10.Samples.JumpListSample
 {
     sealed partial class App : Template10.Common.BootStrapper
     {
@@ -19,7 +17,7 @@ namespace JumpList
             return base.OnInitializeAsync(args);
         }
 
-        public override async Task OnStartAsync(StartKind startKind, IActivatedEventArgs args)
+        public override Task OnStartAsync(StartKind startKind, IActivatedEventArgs args)
         {
             string arguments = string.Empty;
             if (DetermineStartCause(args) == AdditionalKinds.JumpListItem)
@@ -28,6 +26,7 @@ namespace JumpList
                 FileReceived?.Invoke(this, arguments);
             }
             NavigationService.Navigate(typeof(Views.MainPage), arguments);
+            return Task.CompletedTask;
         }
 
         public static event EventHandler<string> FileReceived;
