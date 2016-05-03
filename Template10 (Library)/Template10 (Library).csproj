@@ -131,6 +131,7 @@
     <Compile Include="Behaviors\BackButtonBehavior.cs" />
     <Compile Include="Behaviors\CloseFlyoutAction.cs" />
     <Compile Include="Behaviors\DeviceDispositionBehavior.cs" />
+    <Compile Include="Common\Deferral.cs" />
     <Compile Include="Common\EventThrottleHelper.cs" />
     <Compile Include="Behaviors\EventTriggerBehaviorBase.cs" />
     <Compile Include="Behaviors\FocusAction.cs" />
@@ -158,6 +159,13 @@
     <Compile Include="Common\ChangedEventArgs.cs" />
     <Compile Include="Common\WindowWrapper.cs" />
     <Compile Include="Common\ObservableItemCollection.cs" />
+    <Compile Include="Controls\HamburgerButtonTemplateSelected.cs" />
+    <Compile Include="Controls\HamburgerMenu.PublicMethods.xaml.cs">
+      <DependentUpon>HamburgerMenu.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\HamburgerMenu.PublicProperties.xaml.cs">
+      <DependentUpon>HamburgerMenu.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Controls\ModalDialog.cs" />
     <Compile Include="Controls\CustomTitleBar.cs" />
     <Compile Include="Controls\HamburgerButtonInfo.cs" />
@@ -224,6 +232,11 @@
     <Page Include="Themes\Generic.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Themes\HamburgerMenu.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Page>
     <Page Include="Themes\ModalDialog.xaml">
       <SubType>Designer</SubType>

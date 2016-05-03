@@ -40,17 +40,10 @@ namespace Template10.Common
         #region dependency injection
 
         /// <summary>
-        /// If a developer overrides this method, and leaves the DataContext of a page null, then BootStrapper
-        /// will atttempt to fill the DataContext the return value of this method. 
-        /// </summary>
-        [Obsolete("Use ResolveForPage(Page, NavigationService) instead")]
-        public virtual Services.NavigationService.INavigable ResolveForPage(Type page, NavigationService navigationService) => null;
-
-        /// <summary>
         /// If a developer overrides this method, the developer can resolve DataContext or unwrap DataContext 
         /// available for the Page object when using a MVVM pattern that relies on a wrapped/porxy around ViewModels
         /// </summary>
-        public virtual Services.NavigationService.INavigable ResolveForPage(Page page, NavigationService navigationService) => ResolveForPage(page.GetType(), navigationService);
+        public virtual Services.NavigationService.INavigable ResolveForPage(Page page, NavigationService navigationService) => null;
 
         #endregion
 
@@ -115,23 +108,30 @@ namespace Template10.Common
 
                 // one, global deferral
                 var deferral = e.SuspendingOperation.GetDeferral();
-                try
+                using (var session = new Windows.ApplicationModel.ExtendedExecution.ExtendedExecutionSession
                 {
-                    foreach (var nav in WindowWrapper.ActiveWrappers.SelectMany(x => x.NavigationServices))
+                    Description = this.GetType().ToString(),
+                    Reason = Windows.ApplicationModel.ExtendedExecution.ExtendedExecutionReason.SavingData
+                })
+                {
+                    try
                     {
-                        // date the cache (which marks the date/time it was suspended)
-                        nav.FrameFacade.SetFrameState(CacheDateKey, DateTime.Now.ToString());
-                        // call view model suspend (OnNavigatedfrom)
-                        DebugWrite($"Nav:{nav}", caller: nameof(nav.SuspendingAsync));
-                        await nav.SuspendingAsync();
-                    }
+                        foreach (INavigationService nav in WindowWrapper.ActiveWrappers.SelectMany(x => x.NavigationServices))
+                        {
+                            // date the cache (which marks the date/time it was suspended)
+                            nav.FrameFacade.SetFrameState(CacheDateKey, DateTime.Now.ToString());
+                            // call view model suspend (OnNavigatedfrom)
+                            DebugWrite($"Nav:{nav}", caller: nameof(nav.SuspendingAsync));
+                            await (nav as INavigationService).Dispatcher.DispatchAsync(async () => await nav.SuspendingAsync());
+                        }
 
-                    // call system-level suspend
-                    DebugWrite($"Calling. Prelaunch {(OriginalActivatedArgs as LaunchActivatedEventArgs).PrelaunchActivated}", caller: nameof(OnSuspendingAsync));
-                    await OnSuspendingAsync(s, e, (OriginalActivatedArgs as LaunchActivatedEventArgs).PrelaunchActivated);
+                        // call system-level suspend
+                        DebugWrite($"Calling. Prelaunch {(OriginalActivatedArgs as LaunchActivatedEventArgs)?.PrelaunchActivated ?? false}", caller: nameof(OnSuspendingAsync));
+                        await OnSuspendingAsync(s, e, (OriginalActivatedArgs as LaunchActivatedEventArgs)?.PrelaunchActivated ?? false);
+                    }
+                    catch { /* do nothing */ }
+                    finally { deferral.Complete(); }
                 }
-                catch { /* do nothing */ }
-                finally { deferral.Complete(); }
             };
         }
 
@@ -213,11 +213,8 @@ namespace Template10.Common
 
             // onstart is shared with activate and launch
             DebugWrite("Calling", caller: nameof(OnStartAsync));
-            if (!_HasOnStartAsync)
-            {
-                _HasOnStartAsync = true;
-                await OnStartAsync(StartKind.Activate, e);
-            }
+            _HasOnStartAsync = true;
+            await OnStartAsync(StartKind.Activate, e);
 
             // ensure active (this will hide any custom splashscreen)
             Window.Current.Activate();
@@ -244,7 +241,14 @@ namespace Template10.Common
 
             if (e.PreviousExecutionState != ApplicationExecutionState.Running)
             {
-                await InitializeFrameAsync(e);
+                try
+                {
+                    await InitializeFrameAsync(e);
+                }
+                catch (Exception)
+                {
+                    // nothing
+                }
             }
 
             // okay, now handle launch
@@ -281,7 +285,7 @@ namespace Template10.Common
             }
 
             // handle pre-launch
-            if ((e as LaunchActivatedEventArgs).PrelaunchActivated)
+            if ((e as LaunchActivatedEventArgs)?.PrelaunchActivated ?? false)
             {
                 var runOnStartAsync = false;
                 _HasOnPrelaunchAsync = true;
